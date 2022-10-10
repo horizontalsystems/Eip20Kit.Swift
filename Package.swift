@@ -19,7 +19,6 @@ let package = Package(
           .package(url: "https://github.com/horizontalsystems/EvmKit.Swift.git", .upToNextMajor(from: "1.0.0")),
           .package(url: "https://github.com/horizontalsystems/HsCryptoKit.Swift.git", .upToNextMajor(from: "1.0.0")),
           .package(url: "https://github.com/horizontalsystems/HsExtensions.Swift.git", .upToNextMajor(from: "1.0.0")),
-          .package(url: "https://github.com/horizontalsystems/UIExtensions.Swift", .upToNextMajor(from: "1.0.0")),
         ],
         targets: [
           .target(
@@ -31,7 +30,6 @@ let package = Package(
                     .product(name: "EvmKit", package: "EvmKit.Swift"),
                     .product(name: "HsCryptoKit", package: "HsCryptoKit.Swift"),
                     .product(name: "HsExtensions", package: "HsExtensions.Swift"),
-                    .product(name: "UIExtensions", package: "UIExtensions.Swift"),
                   ]
           )
         ]
