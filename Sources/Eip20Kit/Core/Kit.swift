@@ -2,6 +2,7 @@ import Foundation
 import RxSwift
 import EvmKit
 import BigInt
+import HsToolKit
 
 public class Kit {
     private let disposeBag = DisposeBag()
@@ -160,6 +161,31 @@ extension Kit {
         evmKit.add(methodDecorator: Eip20MethodDecorator(contractMethodFactories: Eip20ContractMethodFactories.shared))
         evmKit.add(eventDecorator: Eip20EventDecorator(userAddress: evmKit.address, storage: evmKit.eip20Storage))
         evmKit.add(transactionDecorator: Eip20TransactionDecorator(userAddress: evmKit.address))
+    }
+
+}
+
+extension Kit {
+
+    public static func tokenInfoSingle(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) -> Single<TokenInfo> {
+        let nameSingle = DataProvider.nameSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+        let symbolSingle = DataProvider.symbolSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+        let decimalsSingle = DataProvider.decimalsSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+
+        return Single.zip(nameSingle, symbolSingle, decimalsSingle)
+                .map { name, symbol, decimals in
+                    TokenInfo(name: name, symbol: symbol, decimals: decimals)
+                }
+    }
+
+}
+
+extension Kit {
+
+    public struct TokenInfo {
+        public let name: String
+        public let symbol: String
+        public let decimals: Int
     }
 
 }
