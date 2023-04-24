@@ -1,5 +1,5 @@
 import Foundation
-import RxSwift
+import Combine
 import BigInt
 import EvmKit
 
@@ -9,9 +9,9 @@ protocol IBalanceManagerDelegate: AnyObject {
 }
 
 protocol ITransactionManager {
-    var transactionsObservable: Observable<[FullTransaction]> { get }
+    var transactionsPublisher: AnyPublisher<[FullTransaction], Never> { get }
 
-    func transactionsSingle(from: Data?, limit: Int?) -> Single<[FullTransaction]>
+    func transactions(from hash: Data?, limit: Int?) -> [FullTransaction]
     func pendingTransactions() -> [FullTransaction]
     func transferTransactionData(to: Address, value: BigUInt) -> TransactionData
 }
@@ -24,5 +24,5 @@ protocol IBalanceManager {
 }
 
 protocol IDataProvider {
-    func getBalance(contractAddress: Address, address: Address) -> Single<BigUInt>
+    func fetchBalance(contractAddress: Address, address: Address) async throws -> BigUInt
 }

@@ -1,11 +1,11 @@
 import Foundation
-import RxSwift
+import Combine
 import EvmKit
 import BigInt
 import HsToolKit
 
 public class Kit {
-    private let disposeBag = DisposeBag()
+    private var cancellables = Set<AnyCancellable>()
 
     private let contractAddress: Address
     private let evmKit: EvmKit.Kit
@@ -26,19 +26,17 @@ public class Kit {
         onUpdateSyncState(syncState: evmKit.syncState)
         state.balance = balanceManager.balance
 
-        evmKit.syncStateObservable
-                .observeOn(ConcurrentDispatchQueueScheduler(qos: .userInitiated))
-                .subscribe(onNext: { [weak self] in
+        evmKit.syncStatePublisher
+                .sink { [weak self] in
                     self?.onUpdateSyncState(syncState: $0)
-                })
-                .disposed(by: disposeBag)
+                }
+                .store(in: &cancellables)
 
-        transactionManager.transactionsObservable
-                .observeOn(ConcurrentDispatchQueueScheduler(qos: .userInitiated))
-                .subscribe(onNext: { [weak self] _ in
+        transactionManager.transactionsPublisher
+                .sink { [weak self] _ in
                     self?.balanceManager.sync()
-                })
-                .disposed(by: disposeBag)
+                }
+                .store(in: &cancellables)
     }
 
     private func onUpdateSyncState(syncState: EvmKit.SyncState) {
@@ -81,35 +79,32 @@ extension Kit {
         state.balance
     }
 
-    public func transactionsSingle(from hash: Data?, limit: Int?) throws -> Single<[FullTransaction]> {
-        transactionManager.transactionsSingle(from: hash, limit: limit)
+    public func transactions(from hash: Data?, limit: Int?) -> [FullTransaction] {
+        transactionManager.transactions(from: hash, limit: limit)
     }
 
     public func pendingTransactions() -> [FullTransaction] {
         transactionManager.pendingTransactions()
     }
 
-    public var syncStateObservable: Observable<SyncState> {
-        state.syncStateSubject.asObservable()
+    public var syncStatePublisher: AnyPublisher<SyncState, Never> {
+        state.syncStateSubject.eraseToAnyPublisher()
     }
 
-    public var transactionsSyncStateObservable: Observable<SyncState> {
-        evmKit.transactionsSyncStateObservable
+    public var transactionsSyncStatePublisher: AnyPublisher<SyncState, Never> {
+        evmKit.transactionsSyncStatePublisher
     }
 
-    public var balanceObservable: Observable<BigUInt> {
-        state.balanceSubject.asObservable()
+    public var balancePublisher: AnyPublisher<BigUInt, Never> {
+        state.balanceSubject.eraseToAnyPublisher()
     }
 
-    public var transactionsObservable: Observable<[FullTransaction]> {
-        transactionManager.transactionsObservable
+    public var transactionsPublisher: AnyPublisher<[FullTransaction], Never> {
+        transactionManager.transactionsPublisher
     }
 
-    public func allowanceSingle(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = .latest) -> Single<String> {
-        allowanceManager.allowanceSingle(spenderAddress: spenderAddress, defaultBlockParameter: defaultBlockParameter)
-                .map { amount in
-                    amount.description
-                }
+    public func allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = .latest) async throws -> String {
+        try await allowanceManager.allowance(spenderAddress: spenderAddress, defaultBlockParameter: defaultBlockParameter).description
     }
 
     public func approveTransactionData(spenderAddress: Address, amount: BigUInt) -> TransactionData {
@@ -167,15 +162,12 @@ extension Kit {
 
 extension Kit {
 
-    public static func tokenInfoSingle(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) -> Single<TokenInfo> {
-        let nameSingle = DataProvider.nameSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
-        let symbolSingle = DataProvider.symbolSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
-        let decimalsSingle = DataProvider.decimalsSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+    public static func tokenInfo(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> TokenInfo {
+        async let name = try DataProvider.fetchName(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+        async let symbol = try DataProvider.fetchSymbol(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
+        async let decimals = try DataProvider.fetchDecimals(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
 
-        return Single.zip(nameSingle, symbolSingle, decimalsSingle)
-                .map { name, symbol, decimals in
-                    TokenInfo(name: name, symbol: symbol, decimals: decimals)
-                }
+        return try await TokenInfo(name: name, symbol: symbol, decimals: decimals)
     }
 
 }

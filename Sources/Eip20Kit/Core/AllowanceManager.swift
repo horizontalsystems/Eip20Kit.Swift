@@ -1,4 +1,3 @@
-import RxSwift
 import BigInt
 import EvmKit
 import HsCryptoKit
@@ -8,8 +7,6 @@ enum AllowanceParsingError: Error {
 }
 
 class AllowanceManager {
-    private let disposeBag = DisposeBag()
-
     private let evmKit: EvmKit.Kit
     private let contractAddress: Address
     private let address: Address
@@ -20,13 +17,10 @@ class AllowanceManager {
         self.address = address
     }
 
-    func allowanceSingle(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter) -> Single<BigUInt> {
-        let data = AllowanceMethod(owner: address, spender: spenderAddress).encodedABI()
-
-        return evmKit.call(contractAddress: contractAddress, data: data, defaultBlockParameter: defaultBlockParameter)
-                .map { data in
-                    BigUInt(data[0...31])
-                }
+    func allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter) async throws -> BigUInt {
+        let methodData = AllowanceMethod(owner: address, spender: spenderAddress).encodedABI()
+        let data = try await evmKit.fetchCall(contractAddress: contractAddress, data: methodData, defaultBlockParameter: defaultBlockParameter)
+        return BigUInt(data[0...31])
     }
 
     func approveTransactionData(spenderAddress: Address, amount: BigUInt) -> TransactionData {

@@ -1,8 +1,8 @@
 import Foundation
+import Combine
+import BigInt
 import EvmKit
 import Eip20Kit
-import RxSwift
-import BigInt
 import HsExtensions
 
 class Eip20Adapter {
@@ -100,32 +100,30 @@ extension Eip20Adapter {
         evmKit.receiveAddress
     }
 
-    var lastBlockHeightObservable: Observable<Void> {
-        evmKit.lastBlockHeightObservable.map { _ in () }
+    var lastBlockHeightPublisher: AnyPublisher<Void, Never> {
+        evmKit.lastBlockHeightPublisher.map { _ in () }.eraseToAnyPublisher()
     }
 
-    var syncStateObservable: Observable<Void> {
-        eip20Kit.syncStateObservable.map { _ in () }
+    var syncStatePublisher: AnyPublisher<Void, Never> {
+        eip20Kit.syncStatePublisher.map { _ in () }.eraseToAnyPublisher()
     }
 
-    var transactionsSyncStateObservable: Observable<Void> {
-        eip20Kit.transactionsSyncStateObservable.map { _ in () }
+    var transactionsSyncStatePublisher: AnyPublisher<Void, Never> {
+        eip20Kit.transactionsSyncStatePublisher.map { _ in () }.eraseToAnyPublisher()
     }
 
-    var balanceObservable: Observable<Void> {
-        eip20Kit.balanceObservable.map { _ in () }
+    var balancePublisher: AnyPublisher<Void, Never> {
+        eip20Kit.balancePublisher.map { _ in () }.eraseToAnyPublisher()
     }
 
-    var transactionsObservable: Observable<Void> {
-        eip20Kit.transactionsObservable.map { _ in () }
+    var transactionsPublisher: AnyPublisher<Void, Never> {
+        eip20Kit.transactionsPublisher.map { _ in () }.eraseToAnyPublisher()
     }
 
-    func transactionsSingle(from hash: Data?, limit: Int?) -> Single<[TransactionRecord]> {
-        try! eip20Kit.transactionsSingle(from: hash, limit: limit)
-                .map { [weak self] in
-                    $0.compactMap {
-                        self?.transactionRecord(fromTransaction: $0)
-                    }
+    func transactions(from hash: Data?, limit: Int?) -> [TransactionRecord] {
+        eip20Kit.transactions(from: hash, limit: limit)
+                .compactMap {
+                    transactionRecord(fromTransaction: $0)
                 }
     }
 
@@ -133,52 +131,39 @@ extension Eip20Adapter {
         nil
     }
 
-    func estimatedGasLimit(to address: Address, value: Decimal, gasPrice: GasPrice) -> Single<Int> {
+    func estimatedGasLimit(to address: Address, value: Decimal, gasPrice: GasPrice) async throws -> Int {
         let value = BigUInt(value.hs.roundedString(decimal: token.decimal))!
         let transactionData = eip20Kit.transferTransactionData(to: address, value: value)
 
-        return evmKit.estimateGas(transactionData: transactionData, gasPrice: gasPrice)
+        return try await evmKit.fetchEstimateGas(transactionData: transactionData, gasPrice: gasPrice)
     }
 
-    func transactionSingle(hash: Data) -> Single<FullTransaction> {
-        evmKit.transactionSingle(hash: hash)
+    func fetchTransaction(hash: Data) async throws -> FullTransaction {
+        try await evmKit.fetchTransaction(hash: hash)
     }
 
-    func allowanceSingle(spenderAddress: Address) -> Single<Decimal> {
-        eip20Kit.allowanceSingle(spenderAddress: spenderAddress)
-                .flatMap { [weak self] allowanceString in
-                    guard let strongSelf = self else {
-                        throw Kit.KitError.weakReference
-                    }
+    func allowance(spenderAddress: Address) async throws -> Decimal {
+        let allowanceString = try await eip20Kit.allowance(spenderAddress: spenderAddress)
 
-                    if let significand = Decimal(string: allowanceString) {
-                        return Single.just(Decimal(sign: .plus, exponent: -strongSelf.token.decimal, significand: significand))
-                    }
+        guard let significand = Decimal(string: allowanceString) else {
+            return 0
+        }
 
-                    return Single.just(0)
-                }
+        return Decimal(sign: .plus, exponent: -token.decimal, significand: significand)
     }
 
-    func sendSingle(to: Address, amount: Decimal, gasLimit: Int, gasPrice: GasPrice) -> Single<Void> {
+    func send(to: Address, amount: Decimal, gasLimit: Int, gasPrice: GasPrice) async throws {
         guard let signer = signer else {
-            return Single.error(SendError.noSigner)
+            throw SendError.noSigner
         }
 
         let value = BigUInt(amount.hs.roundedString(decimal: token.decimal))!
         let transactionData = eip20Kit.transferTransactionData(to: to, value: value)
 
-        return evmKit
-                .rawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit)
-                .flatMap { [weak self] rawTransaction in
-                    guard let strongSelf = self else {
-                        throw EvmKit.Kit.KitError.weakReference
-                    }
+        let rawTransaction = try await evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit)
+        let signature = try signer.signature(rawTransaction: rawTransaction)
 
-                    let signature = try signer.signature(rawTransaction: rawTransaction)
-
-                    return strongSelf.evmKit.sendSingle(rawTransaction: rawTransaction, signature: signature)
-                }
-                .map { (tx: FullTransaction) in () }
+        _ = try await evmKit.send(rawTransaction: rawTransaction, signature: signature)
     }
 
 }
