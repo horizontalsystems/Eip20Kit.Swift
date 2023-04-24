@@ -1,6 +1,5 @@
 import Foundation
 import EvmKit
-import RxSwift
 import BigInt
 import HsExtensions
 import HsToolKit
@@ -16,80 +15,76 @@ public class DataProvider {
 
 extension DataProvider: IDataProvider {
 
-    public func getBalance(contractAddress: Address, address: Address) -> Single<BigUInt> {
-        evmKit.call(contractAddress: contractAddress, data: BalanceOfMethod(owner: address).encodedABI())
-                .flatMap { data -> Single<BigUInt> in
-                    guard let value = BigUInt(data.prefix(32).hs.hex, radix: 16) else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+    public func fetchBalance(contractAddress: Address, address: Address) async throws -> BigUInt {
+        let data = try await evmKit.fetchCall(contractAddress: contractAddress, data: BalanceOfMethod(owner: address).encodedABI())
 
-                    return Single.just(value)
-                }
+        guard let value = BigUInt(data.prefix(32).hs.hex, radix: 16) else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
+
+        return value
     }
 
 }
 
 extension DataProvider {
 
-    static func nameSingle(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) -> Single<String> {
-        EvmKit.Kit.callSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: NameMethod().encodedABI())
-                .flatMap { data -> Single<String> in
-                    guard !data.isEmpty else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+    static func fetchName(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> String {
+        let data = try await EvmKit.Kit.call(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: NameMethod().encodedABI())
 
-                    let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: data, argumentTypes: [Data.self])
+        guard !data.isEmpty else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
 
-                    guard let stringData = parsedArguments[0] as? Data else {
-                        throw ContractMethodFactories.DecodeError.invalidABI
-                    }
+        let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: data, argumentTypes: [Data.self])
 
-                    guard let string = String(data: stringData, encoding: .utf8) else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+        guard let stringData = parsedArguments[0] as? Data else {
+            throw ContractMethodFactories.DecodeError.invalidABI
+        }
 
-                    return Single.just(string)
-                }
+        guard let string = String(data: stringData, encoding: .utf8) else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
+
+        return string
     }
 
-    static func symbolSingle(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) -> Single<String> {
-        EvmKit.Kit.callSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: SymbolMethod().encodedABI())
-                .flatMap { data -> Single<String> in
-                    guard !data.isEmpty else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+    static func fetchSymbol(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> String {
+        let data = try await EvmKit.Kit.call(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: SymbolMethod().encodedABI())
 
-                    let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: data, argumentTypes: [Data.self])
+        guard !data.isEmpty else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
 
-                    guard let stringData = parsedArguments[0] as? Data else {
-                        throw ContractMethodFactories.DecodeError.invalidABI
-                    }
+        let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: data, argumentTypes: [Data.self])
 
-                    guard let string = String(data: stringData, encoding: .utf8) else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+        guard let stringData = parsedArguments[0] as? Data else {
+            throw ContractMethodFactories.DecodeError.invalidABI
+        }
 
-                    return Single.just(string)
-                }
+        guard let string = String(data: stringData, encoding: .utf8) else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
+
+        return string
     }
 
-    static func decimalsSingle(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) -> Single<Int> {
-        EvmKit.Kit.callSingle(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: DecimalsMethod().encodedABI())
-                .flatMap { data -> Single<Int> in
-                    guard !data.isEmpty else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+    static func fetchDecimals(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> Int {
+        let data = try await EvmKit.Kit.call(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress, data: DecimalsMethod().encodedABI())
 
-                    guard let bigIntValue = BigUInt(data.prefix(32).hs.hex, radix: 16) else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+        guard !data.isEmpty else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
 
-                    guard let value = Int(bigIntValue.description) else {
-                        return Single.error(Eip20Kit.TokenError.invalidHex)
-                    }
+        guard let bigIntValue = BigUInt(data.prefix(32).hs.hex, radix: 16) else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
 
-                    return Single.just(value)
-                }
+        guard let value = Int(bigIntValue.description) else {
+            throw Eip20Kit.TokenError.invalidHex
+        }
+
+        return value
     }
 
 }

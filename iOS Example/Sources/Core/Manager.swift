@@ -1,5 +1,4 @@
 import Foundation
-import RxSwift
 import EvmKit
 import Eip20Kit
 import HdWalletKit

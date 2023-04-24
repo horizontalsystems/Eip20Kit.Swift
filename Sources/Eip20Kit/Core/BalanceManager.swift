@@ -1,16 +1,16 @@
+import Foundation
 import EvmKit
-import RxSwift
 import BigInt
+import HsExtensions
 
 class BalanceManager {
     weak var delegate: IBalanceManagerDelegate?
-
-    private let disposeBag = DisposeBag()
 
     private let storage: Eip20Storage
     private let contractAddress: Address
     private let address: Address
     private let dataProvider: IDataProvider
+    private var tasks = Set<AnyTask>()
 
     init(storage: Eip20Storage, contractAddress: Address, address: Address, dataProvider: IDataProvider) {
         self.storage = storage
@@ -23,6 +23,16 @@ class BalanceManager {
         storage.save(balance: balance, contractAddress: contractAddress)
     }
 
+    private func _sync() async {
+        do {
+            let balance = try await dataProvider.fetchBalance(contractAddress: contractAddress, address: address)
+            save(balance: balance)
+            delegate?.onSyncBalanceSuccess(balance: balance)
+        } catch {
+            delegate?.onSyncBalanceFailed(error: error)
+        }
+    }
+
 }
 
 extension BalanceManager: IBalanceManager {
@@ -32,15 +42,7 @@ extension BalanceManager: IBalanceManager {
     }
 
     func sync() {
-        dataProvider.getBalance(contractAddress: contractAddress, address: address)
-                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .background))
-                .subscribe(onSuccess: { [weak self] balance in
-                    self?.save(balance: balance)
-                    self?.delegate?.onSyncBalanceSuccess(balance: balance)
-                }, onError: { error in
-                    self.delegate?.onSyncBalanceFailed(error: error)
-                })
-                .disposed(by: disposeBag)
+        Task { [weak self] in await self?._sync() }.store(in: &tasks)
     }
 
 }

@@ -1,4 +1,3 @@
-import RxSwift
 import BigInt
 import EvmKit
 
@@ -37,32 +36,33 @@ class Eip20TransactionSyncer {
 
 extension Eip20TransactionSyncer: ITransactionSyncer {
 
-    public func transactionsSingle() -> Single<([Transaction], Bool)> {
+    func transactions() async throws -> ([Transaction], Bool) {
         let lastBlockNumber = storage.lastEvent()?.blockNumber ?? 0
         let initial = lastBlockNumber == 0
 
-        return provider.tokenTransactionsSingle(startBlock: lastBlockNumber + 1)
-                .do(onSuccess: { [weak self] transactions in
-                    self?.handle(transactions: transactions)
-                })
-                .map { transactions in
-                    let array = transactions.map { tx in
-                        Transaction(
-                                hash: tx.hash,
-                                timestamp: tx.timestamp,
-                                isFailed: false,
-                                blockNumber: tx.blockNumber,
-                                transactionIndex: tx.transactionIndex,
-                                nonce: tx.nonce,
-                                gasPrice: tx.gasPrice,
-                                gasLimit: tx.gasLimit,
-                                gasUsed: tx.gasUsed
-                        )
-                    }
+        do {
+            let transactions = try await provider.tokenTransactions(startBlock: lastBlockNumber + 1)
 
-                    return (array, initial)
-                }
-                .catchErrorJustReturn(([], initial))
+            handle(transactions: transactions)
+
+            let array = transactions.map { tx in
+                Transaction(
+                        hash: tx.hash,
+                        timestamp: tx.timestamp,
+                        isFailed: false,
+                        blockNumber: tx.blockNumber,
+                        transactionIndex: tx.transactionIndex,
+                        nonce: tx.nonce,
+                        gasPrice: tx.gasPrice,
+                        gasLimit: tx.gasLimit,
+                        gasUsed: tx.gasUsed
+                )
+            }
+
+            return (array, initial)
+        } catch {
+            return ([], initial)
+        }
     }
 
 }

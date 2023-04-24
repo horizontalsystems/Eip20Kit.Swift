@@ -1,10 +1,10 @@
 import Foundation
-import EvmKit
+import Combine
 import BigInt
-import RxSwift
+import EvmKit
 
 class TransactionManager {
-    private let disposeBag = DisposeBag()
+    private var cancellables = Set<AnyCancellable>()
 
     private let evmKit: EvmKit.Kit
     private let contractAddress: Address
@@ -12,10 +12,10 @@ class TransactionManager {
     private let address: Address
     private let tagQueries: [TransactionTagQuery]
 
-    private let transactionsSubject = PublishSubject<[FullTransaction]>()
+    private let transactionsSubject = PassthroughSubject<[FullTransaction], Never>()
 
-    var transactionsObservable: Observable<[FullTransaction]> {
-        transactionsSubject.asObservable()
+    var transactionsPublisher: AnyPublisher<[FullTransaction], Never> {
+        transactionsSubject.eraseToAnyPublisher()
     }
 
     init(evmKit: EvmKit.Kit, contractAddress: Address, contractMethodFactories: Eip20ContractMethodFactories) {
@@ -26,11 +26,11 @@ class TransactionManager {
         address = evmKit.receiveAddress
         tagQueries = [TransactionTagQuery(contractAddress: contractAddress)]
 
-        evmKit.transactionsObservable(tagQueries: [TransactionTagQuery(contractAddress: contractAddress)])
-                .subscribe { [weak self] in
+        evmKit.transactionsPublisher(tagQueries: [TransactionTagQuery(contractAddress: contractAddress)])
+                .sink { [weak self] in
                     self?.processTransactions(eip20Transactions: $0)
                 }
-                .disposed(by: disposeBag)
+                .store(in: &cancellables)
     }
 
     private func processTransactions(eip20Transactions: [FullTransaction]) {
@@ -38,15 +38,15 @@ class TransactionManager {
             return
         }
 
-        transactionsSubject.onNext(eip20Transactions)
+        transactionsSubject.send(eip20Transactions)
     }
 
 }
 
 extension TransactionManager: ITransactionManager {
 
-    func transactionsSingle(from hash: Data?, limit: Int?) -> Single<[FullTransaction]> {
-        evmKit.transactionsSingle(tagQueries: tagQueries, fromHash: hash, limit: limit)
+    func transactions(from hash: Data?, limit: Int?) -> [FullTransaction] {
+        evmKit.transactions(tagQueries: tagQueries, fromHash: hash, limit: limit)
     }
 
     func pendingTransactions() -> [FullTransaction] {
