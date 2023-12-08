@@ -1,7 +1,7 @@
 import Combine
-import UIKit
-import SnapKit
 import EvmKit
+import SnapKit
+import UIKit
 
 class SendController: UIViewController {
     private let adapter: Eip20Adapter = Manager.shared.adapter
@@ -117,16 +117,16 @@ class SendController: UIViewController {
         sendButton.addTarget(self, action: #selector(send), for: .touchUpInside)
 
         feeHistoryProvider.feeHistoryPublisher(blocksCount: 2, rewardPercentile: [50])
-                .sink(receiveCompletion: { completion in
-                    switch completion {
-                    case .failure(let error):
-                        print("FeeHistoryError: \(error)")
-                    default: ()
-                    }
-                }, receiveValue: { [weak self] history in
-                    self?.handle(feeHistory: history)
-                })
-                .store(in: &cancellables)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case let .failure(error):
+                    print("FeeHistoryError: \(error)")
+                default: ()
+                }
+            }, receiveValue: { [weak self] history in
+                self?.handle(feeHistory: history)
+            })
+            .store(in: &cancellables)
 
         addressTextField.addTarget(self, action: #selector(updateEstimatedGasPrice), for: .editingChanged)
         amountTextField.addTarget(self, action: #selector(updateEstimatedGasPrice), for: .editingChanged)
@@ -146,7 +146,8 @@ class SendController: UIViewController {
         guard let addressHex = addressTextField.text?.trimmingCharacters(in: .whitespaces),
               let valueText = amountTextField.text,
               let value = Decimal(string: valueText),
-              !value.isZero else {
+              !value.isZero
+        else {
             return
         }
 
@@ -169,7 +170,8 @@ class SendController: UIViewController {
 
     @objc private func send() {
         guard let addressHex = addressTextField.text?.trimmingCharacters(in: .whitespaces),
-              let estimateGasLimit = estimateGasLimit else {
+              let estimateGasLimit
+        else {
             return
         }
 
@@ -243,11 +245,10 @@ class SendController: UIViewController {
 
         let gasLimitPrefix = "Gas limit: "
 
-        if let value = value {
+        if let value {
             gasPriceLabel.text = gasLimitPrefix + "\(value)"
         } else {
             gasPriceLabel.text = gasLimitPrefix + "n/a"
         }
     }
-
 }

@@ -1,5 +1,5 @@
-import EvmKit
 import BigInt
+import EvmKit
 
 public class TransferEventInstance: ContractEventInstance {
     static let signature = ContractEvent(name: "Transfer", arguments: [.address, .address, .uint256]).signature
@@ -19,7 +19,7 @@ public class TransferEventInstance: ContractEventInstance {
         super.init(contractAddress: contractAddress)
     }
 
-    public override func tags(userAddress: Address) -> [TransactionTag] {
+    override public func tags(userAddress: Address) -> [TransactionTag] {
         var tags = [TransactionTag]()
 
         if from == userAddress {
@@ -32,7 +32,6 @@ public class TransferEventInstance: ContractEventInstance {
 
         return tags
     }
-
 }
 
 public struct TokenInfo {

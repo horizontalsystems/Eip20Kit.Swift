@@ -20,15 +20,14 @@ class AllowanceManager {
     func allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter) async throws -> BigUInt {
         let methodData = AllowanceMethod(owner: address, spender: spenderAddress).encodedABI()
         let data = try await evmKit.fetchCall(contractAddress: contractAddress, data: methodData, defaultBlockParameter: defaultBlockParameter)
-        return BigUInt(data[0...31])
+        return BigUInt(data[0 ... 31])
     }
 
     func approveTransactionData(spenderAddress: Address, amount: BigUInt) -> TransactionData {
         TransactionData(
-                to: contractAddress,
-                value: BigUInt.zero,
-                input: ApproveMethod(spender: spenderAddress, value: amount).encodedABI()
+            to: contractAddress,
+            value: BigUInt.zero,
+            input: ApproveMethod(spender: spenderAddress, value: amount).encodedABI()
         )
     }
-
 }

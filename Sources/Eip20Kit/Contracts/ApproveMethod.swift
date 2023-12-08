@@ -1,5 +1,5 @@
-import EvmKit
 import BigInt
+import EvmKit
 
 class ApproveMethod: ContractMethod {
     static let methodSignature = "approve(address,uint256)"

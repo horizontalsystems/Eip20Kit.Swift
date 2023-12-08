@@ -1,5 +1,5 @@
-import Foundation
 import EvmKit
+import Foundation
 
 class Eip20EventDecorator {
     private let userAddress: Address
@@ -9,18 +9,16 @@ class Eip20EventDecorator {
         self.userAddress = userAddress
         self.storage = storage
     }
-
 }
 
 extension Eip20EventDecorator: IEventDecorator {
-
     public func contractEventInstancesMap(transactions: [Transaction]) -> [Data: [ContractEventInstance]] {
         let events: [Event]
 
         if transactions.count > 100 {
             events = storage.events()
         } else {
-            let hashes = transactions.map { $0.hash }
+            let hashes = transactions.map(\.hash)
             events = storage.events(hashes: hashes)
         }
 
@@ -28,11 +26,11 @@ extension Eip20EventDecorator: IEventDecorator {
 
         for event in events {
             let eventInstance = TransferEventInstance(
-                    contractAddress: event.contractAddress,
-                    from: event.from,
-                    to: event.to,
-                    value: event.value,
-                    tokenInfo: TokenInfo(tokenName: event.tokenName, tokenSymbol: event.tokenSymbol, tokenDecimal: event.tokenDecimal)
+                contractAddress: event.contractAddress,
+                from: event.from,
+                to: event.to,
+                value: event.value,
+                tokenInfo: TokenInfo(tokenName: event.tokenName, tokenSymbol: event.tokenSymbol, tokenDecimal: event.tokenDecimal)
             )
 
             map[event.hash] = (map[event.hash] ?? []) + [eventInstance]
@@ -64,5 +62,4 @@ extension Eip20EventDecorator: IEventDecorator {
             return nil
         }
     }
-
 }

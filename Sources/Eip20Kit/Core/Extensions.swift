@@ -1,17 +1,14 @@
-import EvmKit
 import BigInt
+import EvmKit
 
 extension Array {
-
     subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
     }
-
 }
 
-extension TransactionLog {
-
-    public var eip20EventInstance: ContractEventInstance? {
+public extension TransactionLog {
+    var eip20EventInstance: ContractEventInstance? {
         guard topics.count == 3 else {
             return nil
         }
@@ -22,10 +19,10 @@ extension TransactionLog {
 
         if signature == TransferEventInstance.signature {
             return TransferEventInstance(
-                    contractAddress: address,
-                    from: firstParam,
-                    to: secondParam,
-                    value: BigUInt(data)
+                contractAddress: address,
+                from: firstParam,
+                to: secondParam,
+                value: BigUInt(data)
             )
         }
 
@@ -35,5 +32,4 @@ extension TransactionLog {
 
         return nil
     }
-
 }
