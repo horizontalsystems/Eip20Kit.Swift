@@ -1,8 +1,8 @@
-import Foundation
-import Combine
 import BigInt
-import EvmKit
+import Combine
 import Eip20Kit
+import EvmKit
+import Foundation
 import HsExtensions
 
 class Eip20Adapter {
@@ -28,26 +28,22 @@ class Eip20Adapter {
         }
 
         return TransactionRecord(
-                transactionHash: transaction.hash.hs.hexString,
-                transactionHashData: transaction.hash,
-                timestamp: transaction.timestamp,
-                isFailed: transaction.isFailed,
-                from: transaction.from,
-                to: transaction.to,
-                amount: amount,
-                input: transaction.input.map {
-                    $0.hs.hexString
-                },
-                blockHeight: transaction.blockNumber,
-                transactionIndex: transaction.transactionIndex,
-                decoration: String(describing: fullTransaction.decoration)
+            transactionHash: transaction.hash.hs.hexString,
+            transactionHashData: transaction.hash,
+            timestamp: transaction.timestamp,
+            isFailed: transaction.isFailed,
+            from: transaction.from,
+            to: transaction.to,
+            amount: amount,
+            input: transaction.input.map(\.hs.hexString),
+            blockHeight: transaction.blockNumber,
+            transactionIndex: transaction.transactionIndex,
+            decoration: String(describing: fullTransaction.decoration)
         )
     }
-
 }
 
 extension Eip20Adapter {
-
     func start() {
         eip20Kit.start()
     }
@@ -76,7 +72,7 @@ extension Eip20Adapter {
         switch eip20Kit.syncState {
         case .synced: return EvmKit.SyncState.synced
         case .syncing: return EvmKit.SyncState.syncing(progress: nil)
-        case .notSynced(let error): return EvmKit.SyncState.notSynced(error: error)
+        case let .notSynced(error): return EvmKit.SyncState.notSynced(error: error)
         }
     }
 
@@ -84,7 +80,7 @@ extension Eip20Adapter {
         switch eip20Kit.transactionsSyncState {
         case .synced: return EvmKit.SyncState.synced
         case .syncing: return EvmKit.SyncState.syncing(progress: nil)
-        case .notSynced(let error): return EvmKit.SyncState.notSynced(error: error)
+        case let .notSynced(error): return EvmKit.SyncState.notSynced(error: error)
         }
     }
 
@@ -122,12 +118,12 @@ extension Eip20Adapter {
 
     func transactions(from hash: Data?, limit: Int?) -> [TransactionRecord] {
         eip20Kit.transactions(from: hash, limit: limit)
-                .compactMap {
-                    transactionRecord(fromTransaction: $0)
-                }
+            .compactMap {
+                transactionRecord(fromTransaction: $0)
+            }
     }
 
-    func transaction(hash: Data, interTransactionIndex: Int) -> TransactionRecord? {
+    func transaction(hash _: Data, interTransactionIndex _: Int) -> TransactionRecord? {
         nil
     }
 
@@ -153,7 +149,7 @@ extension Eip20Adapter {
     }
 
     func send(to: Address, amount: Decimal, gasLimit: Int, gasPrice: GasPrice) async throws {
-        guard let signer = signer else {
+        guard let signer else {
             throw SendError.noSigner
         }
 
@@ -165,13 +161,10 @@ extension Eip20Adapter {
 
         _ = try await evmKit.send(rawTransaction: rawTransaction, signature: signature)
     }
-
 }
 
 extension Eip20Adapter {
-
     enum SendError: Error {
         case noSigner
     }
-
 }

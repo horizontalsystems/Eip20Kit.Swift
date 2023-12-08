@@ -1,5 +1,5 @@
-import GRDB
 import BigInt
+import GRDB
 
 class TokenBalance: Record {
     let primaryKey: String = "primaryKey"
@@ -30,5 +30,4 @@ class TokenBalance: Record {
         container[Columns.primaryKey] = primaryKey
         container[Columns.value] = value
     }
-
 }

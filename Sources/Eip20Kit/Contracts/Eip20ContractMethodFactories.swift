@@ -7,5 +7,4 @@ class Eip20ContractMethodFactories: ContractMethodFactories {
         super.init()
         register(factories: [TransferMethodFactory(), ApproveMethodFactory()])
     }
-
 }

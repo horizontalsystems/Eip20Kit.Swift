@@ -1,5 +1,5 @@
-import EvmKit
 import BigInt
+import EvmKit
 
 class TransferMethod: ContractMethod {
     static let methodSignature = "transfer(address,uint256)"

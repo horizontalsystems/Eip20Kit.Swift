@@ -1,7 +1,7 @@
-import Foundation
+import BigInt
 import Combine
 import EvmKit
-import BigInt
+import Foundation
 import HsToolKit
 
 public class Kit {
@@ -27,16 +27,16 @@ public class Kit {
         state.balance = balanceManager.balance
 
         evmKit.syncStatePublisher
-                .sink { [weak self] in
-                    self?.onUpdateSyncState(syncState: $0)
-                }
-                .store(in: &cancellables)
+            .sink { [weak self] in
+                self?.onUpdateSyncState(syncState: $0)
+            }
+            .store(in: &cancellables)
 
         transactionManager.transactionsPublisher
-                .sink { [weak self] _ in
-                    self?.balanceManager.sync()
-                }
-                .store(in: &cancellables)
+            .sink { [weak self] _ in
+                self?.balanceManager.sync()
+            }
+            .store(in: &cancellables)
     }
 
     private func onUpdateSyncState(syncState: EvmKit.SyncState) {
@@ -46,79 +46,73 @@ public class Kit {
             balanceManager.sync()
         case .syncing:
             state.syncState = .syncing(progress: nil)
-        case .notSynced(let error):
+        case let .notSynced(error):
             state.syncState = .notSynced(error: error)
         }
     }
-
 }
 
-extension Kit {
-
-    public func start() {
+public extension Kit {
+    func start() {
         if case .synced = evmKit.syncState {
             balanceManager.sync()
         }
     }
 
-    public func stop() {
-    }
+    func stop() {}
 
-    public func refresh() {
-    }
+    func refresh() {}
 
-    public var syncState: SyncState {
+    var syncState: SyncState {
         state.syncState
     }
 
-    public var transactionsSyncState: SyncState {
+    var transactionsSyncState: SyncState {
         evmKit.transactionsSyncState
     }
 
-    public var balance: BigUInt? {
+    var balance: BigUInt? {
         state.balance
     }
 
-    public func transactions(from hash: Data?, limit: Int?) -> [FullTransaction] {
+    func transactions(from hash: Data?, limit: Int?) -> [FullTransaction] {
         transactionManager.transactions(from: hash, limit: limit)
     }
 
-    public func pendingTransactions() -> [FullTransaction] {
+    func pendingTransactions() -> [FullTransaction] {
         transactionManager.pendingTransactions()
     }
 
-    public var syncStatePublisher: AnyPublisher<SyncState, Never> {
+    var syncStatePublisher: AnyPublisher<SyncState, Never> {
         state.syncStateSubject.eraseToAnyPublisher()
     }
 
-    public var transactionsSyncStatePublisher: AnyPublisher<SyncState, Never> {
+    var transactionsSyncStatePublisher: AnyPublisher<SyncState, Never> {
         evmKit.transactionsSyncStatePublisher
     }
 
-    public var balancePublisher: AnyPublisher<BigUInt, Never> {
+    var balancePublisher: AnyPublisher<BigUInt, Never> {
         state.balanceSubject.eraseToAnyPublisher()
     }
 
-    public var transactionsPublisher: AnyPublisher<[FullTransaction], Never> {
+    var transactionsPublisher: AnyPublisher<[FullTransaction], Never> {
         transactionManager.transactionsPublisher
     }
 
-    public func allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = .latest) async throws -> String {
+    func allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = .latest) async throws -> String {
         try await allowanceManager.allowance(spenderAddress: spenderAddress, defaultBlockParameter: defaultBlockParameter).description
     }
 
-    public func approveTransactionData(spenderAddress: Address, amount: BigUInt) -> TransactionData {
+    func approveTransactionData(spenderAddress: Address, amount: BigUInt) -> TransactionData {
         allowanceManager.approveTransactionData(spenderAddress: spenderAddress, amount: amount)
     }
 
-    public func transferTransactionData(to: Address, value: BigUInt) -> TransactionData {
+    func transferTransactionData(to: Address, value: BigUInt) -> TransactionData {
         transactionManager.transferTransactionData(to: to, value: value)
     }
-
 }
 
 extension Kit: IBalanceManagerDelegate {
-
     func onSyncBalanceSuccess(balance: BigUInt) {
         state.syncState = .synced
         state.balance = balance
@@ -127,12 +121,10 @@ extension Kit: IBalanceManagerDelegate {
     func onSyncBalanceFailed(error: Error) {
         state.syncState = .notSynced(error: error)
     }
-
 }
 
-extension Kit {
-
-    public static func instance(evmKit: EvmKit.Kit, contractAddress: Address) throws -> Kit {
+public extension Kit {
+    static func instance(evmKit: EvmKit.Kit, contractAddress: Address) throws -> Kit {
         let address = evmKit.address
 
         let dataProvider: IDataProvider = DataProvider(evmKit: evmKit)
@@ -147,37 +139,32 @@ extension Kit {
         return kit
     }
 
-    public static func addTransactionSyncer(to evmKit: EvmKit.Kit) {
+    static func addTransactionSyncer(to evmKit: EvmKit.Kit) {
         let syncer = Eip20TransactionSyncer(provider: evmKit.transactionProvider, storage: evmKit.eip20Storage)
         evmKit.add(transactionSyncer: syncer)
     }
 
-    public static func addDecorators(to evmKit: EvmKit.Kit) {
+    static func addDecorators(to evmKit: EvmKit.Kit) {
         evmKit.add(methodDecorator: Eip20MethodDecorator(contractMethodFactories: Eip20ContractMethodFactories.shared))
         evmKit.add(eventDecorator: Eip20EventDecorator(userAddress: evmKit.address, storage: evmKit.eip20Storage))
         evmKit.add(transactionDecorator: Eip20TransactionDecorator(userAddress: evmKit.address))
     }
-
 }
 
-extension Kit {
-
-    public static func tokenInfo(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> TokenInfo {
+public extension Kit {
+    static func tokenInfo(networkManager: NetworkManager, rpcSource: RpcSource, contractAddress: Address) async throws -> TokenInfo {
         async let name = try DataProvider.fetchName(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
         async let symbol = try DataProvider.fetchSymbol(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
         async let decimals = try DataProvider.fetchDecimals(networkManager: networkManager, rpcSource: rpcSource, contractAddress: contractAddress)
 
         return try await TokenInfo(name: name, symbol: symbol, decimals: decimals)
     }
-
 }
 
-extension Kit {
-
-    public struct TokenInfo {
+public extension Kit {
+    struct TokenInfo {
         public let name: String
         public let symbol: String
         public let decimals: Int
     }
-
 }

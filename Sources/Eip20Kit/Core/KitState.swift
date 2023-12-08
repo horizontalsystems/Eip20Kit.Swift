@@ -1,5 +1,5 @@
-import Combine
 import BigInt
+import Combine
 import EvmKit
 
 class KitState {
@@ -13,7 +13,7 @@ class KitState {
 
     var balance: BigUInt? {
         didSet {
-            if let balance = balance, balance != oldValue {
+            if let balance, balance != oldValue {
                 balanceSubject.send(balance)
             }
         }

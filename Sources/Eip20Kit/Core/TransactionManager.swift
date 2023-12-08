@@ -1,7 +1,7 @@
-import Foundation
-import Combine
 import BigInt
+import Combine
 import EvmKit
+import Foundation
 
 class TransactionManager {
     private var cancellables = Set<AnyCancellable>()
@@ -27,10 +27,10 @@ class TransactionManager {
         tagQueries = [TransactionTagQuery(contractAddress: contractAddress)]
 
         evmKit.transactionsPublisher(tagQueries: [TransactionTagQuery(contractAddress: contractAddress)])
-                .sink { [weak self] in
-                    self?.processTransactions(eip20Transactions: $0)
-                }
-                .store(in: &cancellables)
+            .sink { [weak self] in
+                self?.processTransactions(eip20Transactions: $0)
+            }
+            .store(in: &cancellables)
     }
 
     private func processTransactions(eip20Transactions: [FullTransaction]) {
@@ -40,11 +40,9 @@ class TransactionManager {
 
         transactionsSubject.send(eip20Transactions)
     }
-
 }
 
 extension TransactionManager: ITransactionManager {
-
     func transactions(from hash: Data?, limit: Int?) -> [FullTransaction] {
         evmKit.transactions(tagQueries: tagQueries, fromHash: hash, limit: limit)
     }
@@ -55,10 +53,9 @@ extension TransactionManager: ITransactionManager {
 
     func transferTransactionData(to: Address, value: BigUInt) -> TransactionData {
         TransactionData(
-                to: contractAddress,
-                value: BigUInt.zero,
-                input: TransferMethod(to: to, value: value).encodedABI()
+            to: contractAddress,
+            value: BigUInt.zero,
+            input: TransferMethod(to: to, value: value).encodedABI()
         )
     }
-
 }

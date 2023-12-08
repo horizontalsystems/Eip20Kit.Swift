@@ -1,16 +1,16 @@
-import Foundation
-import EvmKit
 import Eip20Kit
+import EvmKit
+import Foundation
 import HdWalletKit
 
 class Manager {
     static let shared = Manager()
 
     let token = Eip20Token(
-            name: "DAI Stablecoin",
-            code: "DAI",
-            contractAddress: try! Address(hex: "0x6B175474E89094C44Da98b954EedeAC495271d0F"),
-            decimal: 18
+        name: "DAI Stablecoin",
+        code: "DAI",
+        contractAddress: try! Address(hex: "0x6B175474E89094C44Da98b954EedeAC495271d0F"),
+        decimal: 18
     )
 //    let token = Eip20Token(
 //            name: "Tether USD",
@@ -36,12 +36,12 @@ class Manager {
 
     private func initKit(address: Address, configuration: Configuration, signer: Signer?) throws {
         let evmKit = try EvmKit.Kit.instance(
-                address: address,
-                chain: configuration.chain,
-                rpcSource: configuration.rpcSource,
-                transactionSource: configuration.transactionSource,
-                walletId: "walletId",
-                minLogLevel: configuration.minLogLevel
+            address: address,
+            chain: configuration.chain,
+            rpcSource: configuration.rpcSource,
+            transactionSource: configuration.transactionSource,
+            walletId: "walletId",
+            minLogLevel: configuration.minLogLevel
         )
 
         adapter = try Eip20Adapter(evmKit: evmKit, signer: signer, token: token)
@@ -56,7 +56,6 @@ class Manager {
         adapter.start()
     }
 
-
     private func initKit(words: [String]) throws {
         let configuration = Configuration.shared
 
@@ -67,9 +66,9 @@ class Manager {
         let signer = try Signer.instance(seed: seed, chain: configuration.chain)
 
         try initKit(
-                address: try Signer.address(seed: seed, chain: configuration.chain),
-                configuration: configuration,
-                signer: signer
+            address: Signer.address(seed: seed, chain: configuration.chain),
+            configuration: configuration,
+            signer: signer
         )
     }
 
@@ -110,11 +109,9 @@ class Manager {
         UserDefaults.standard.removeObject(forKey: keyAddress)
         UserDefaults.standard.synchronize()
     }
-
 }
 
 extension Manager {
-
     func login(words: [String]) throws {
         try Kit.clear(exceptFor: ["walletId"])
 
@@ -136,15 +133,12 @@ extension Manager {
         evmKit = nil
         adapter = nil
     }
-
 }
 
 extension Manager {
-
     enum LoginError: Error {
         case seedGenerationFailed
     }
-
 }
 
 struct Eip20Token {
