@@ -20,7 +20,7 @@ public class OutgoingEip20Decoration: TransactionDecoration {
 
     override public func tags() -> [TransactionTag] {
         [
-            TransactionTag(type: .outgoing, protocol: .eip20, contractAddress: contractAddress),
+            TransactionTag(type: .outgoing, protocol: .eip20, contractAddress: contractAddress, addresses: [to.hex]),
         ]
     }
 }
