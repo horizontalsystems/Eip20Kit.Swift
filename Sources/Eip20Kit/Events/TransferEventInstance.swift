@@ -23,11 +23,11 @@ public class TransferEventInstance: ContractEventInstance {
         var tags = [TransactionTag]()
 
         if from == userAddress {
-            tags.append(TransactionTag(type: .outgoing, protocol: .eip20, contractAddress: contractAddress))
+            tags.append(TransactionTag(type: .outgoing, protocol: .eip20, contractAddress: contractAddress, addresses: [to.hex]))
         }
 
         if to == userAddress {
-            tags.append(TransactionTag(type: .incoming, protocol: .eip20, contractAddress: contractAddress))
+            tags.append(TransactionTag(type: .incoming, protocol: .eip20, contractAddress: contractAddress, addresses: [from.hex]))
         }
 
         return tags
