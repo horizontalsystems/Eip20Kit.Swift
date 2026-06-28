@@ -139,9 +139,12 @@ public extension Kit {
         return kit
     }
 
+    static func transactionSyncer(for evmKit: EvmKit.Kit) -> ITransactionSyncer {
+        Eip20TransactionSyncer(provider: evmKit.transactionProvider, storage: evmKit.eip20Storage)
+    }
+
     static func addTransactionSyncer(to evmKit: EvmKit.Kit) {
-        let syncer = Eip20TransactionSyncer(provider: evmKit.transactionProvider, storage: evmKit.eip20Storage)
-        evmKit.add(transactionSyncer: syncer)
+        evmKit.add(transactionSyncer: transactionSyncer(for: evmKit))
     }
 
     static func addDecorators(to evmKit: EvmKit.Kit) {
