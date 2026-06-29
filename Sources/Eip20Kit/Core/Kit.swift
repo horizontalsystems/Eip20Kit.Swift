@@ -139,7 +139,7 @@ public extension Kit {
         return kit
     }
 
-    static func transactionSyncer(for evmKit: EvmKit.Kit) -> ITransactionSyncer {
+    public static func transactionSyncer(for evmKit: EvmKit.Kit) -> ITransactionSyncer {
         Eip20TransactionSyncer(provider: evmKit.transactionProvider, storage: evmKit.eip20Storage)
     }
 
