@@ -10,7 +10,7 @@ public class TransferEventInstance: ContractEventInstance {
 
     public let tokenInfo: TokenInfo?
 
-    init(contractAddress: Address, from: Address, to: Address, value: BigUInt, tokenInfo: TokenInfo? = nil) {
+    public init(contractAddress: Address, from: Address, to: Address, value: BigUInt, tokenInfo: TokenInfo? = nil) {
         self.from = from
         self.to = to
         self.value = value
